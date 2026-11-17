@@ -49,6 +49,58 @@ CREATE TABLE IF NOT EXISTS audit (
     id INTEGER PRIMARY KEY AUTOINCREMENT, at TEXT NOT NULL, actor TEXT NOT NULL,
     action TEXT NOT NULL, subject TEXT NOT NULL, details TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS subjects (
+    id TEXT PRIMARY KEY, jurisdiction TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active', created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS subject_names (
+    subject_id TEXT NOT NULL REFERENCES subjects(id),
+    name TEXT NOT NULL, valid_from TEXT NOT NULL, valid_to TEXT,
+    PRIMARY KEY(subject_id,name,valid_from)
+);
+CREATE TABLE IF NOT EXISTS identity_events (
+    id TEXT PRIMARY KEY, kind TEXT NOT NULL, at TEXT NOT NULL,
+    actor TEXT NOT NULL, reason TEXT NOT NULL,
+    from_subjects TEXT NOT NULL, to_subjects TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS attributions (
+    id TEXT PRIMARY KEY,
+    asset_id TEXT NOT NULL REFERENCES assets(id),
+    subject_id TEXT NOT NULL REFERENCES subjects(id),
+    claimed_name TEXT NOT NULL, basis TEXT NOT NULL, note TEXT,
+    state TEXT NOT NULL DEFAULT 'active',
+    created_at TEXT NOT NULL, created_by TEXT NOT NULL,
+    supersedes TEXT, event_id TEXT REFERENCES identity_events(id)
+);
+CREATE TABLE IF NOT EXISTS response_links (
+    id TEXT PRIMARY KEY,
+    observation_asset_id TEXT NOT NULL REFERENCES assets(id),
+    response_asset_id TEXT NOT NULL REFERENCES assets(id),
+    created_at TEXT NOT NULL, created_by TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS disputes (
+    id TEXT PRIMARY KEY,
+    observation_asset_id TEXT NOT NULL REFERENCES assets(id),
+    raised_by TEXT NOT NULL REFERENCES subjects(id),
+    raised_at TEXT NOT NULL, grounds TEXT NOT NULL,
+    state TEXT NOT NULL DEFAULT 'open',
+    decided_at TEXT, decided_by TEXT, decision_note TEXT
+);
+CREATE TABLE IF NOT EXISTS conclusions (
+    subject_id TEXT NOT NULL REFERENCES subjects(id),
+    revision INTEGER NOT NULL, summary TEXT NOT NULL,
+    created_at TEXT NOT NULL, created_by TEXT NOT NULL,
+    PRIMARY KEY(subject_id,revision)
+);
+CREATE TABLE IF NOT EXISTS conclusion_items (
+    subject_id TEXT NOT NULL, revision INTEGER NOT NULL,
+    observation_asset_id TEXT NOT NULL,
+    attribution_id TEXT NOT NULL REFERENCES attributions(id),
+    dispute_id TEXT, decision TEXT NOT NULL, reason TEXT NOT NULL,
+    responses TEXT NOT NULL,
+    PRIMARY KEY(subject_id,revision,observation_asset_id),
+    FOREIGN KEY(subject_id,revision) REFERENCES conclusions(subject_id,revision)
+);
 """
 
 
